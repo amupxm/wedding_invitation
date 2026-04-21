@@ -24,18 +24,30 @@ const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);
+const corsAllowAll = process.env.CORS_ALLOW_ALL === 'true';
+const corsOptions: cors.CorsOptions = {
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'x-admin-password'],
+  optionsSuccessStatus: 204,
+  origin: (origin, callback) => {
+    // Allow non-browser or same-origin requests without Origin header.
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+
+    if (corsAllowAll || allowedOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error('Not allowed by CORS'));
+  },
+};
 app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow non-browser or same-origin requests without Origin header.
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-        return;
-      }
-      callback(new Error('Not allowed by CORS'));
-    },
-  })
+  cors(corsOptions)
 );
+app.options('/api/*', cors(corsOptions));
 
 // Request logging
 app.use(morgan('short'));
