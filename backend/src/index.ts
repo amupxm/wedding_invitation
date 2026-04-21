@@ -25,6 +25,15 @@ const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
   .map((origin) => origin.trim())
   .filter(Boolean);
 const corsAllowAll = process.env.CORS_ALLOW_ALL === 'true';
+const allowWildcardOrigins = allowedOrigins
+  .filter((origin) => origin.includes('*'))
+  .map((pattern) => new RegExp(`^${pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace('\\*', '.*')}$`));
+
+function isAllowedOrigin(origin: string): boolean {
+  if (allowedOrigins.includes(origin)) return true;
+  return allowWildcardOrigins.some((pattern) => pattern.test(origin));
+}
+
 const corsOptions: cors.CorsOptions = {
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'x-admin-password'],
@@ -36,12 +45,14 @@ const corsOptions: cors.CorsOptions = {
       return;
     }
 
-    if (corsAllowAll || allowedOrigins.includes(origin)) {
+    if (corsAllowAll || isAllowedOrigin(origin)) {
       callback(null, true);
       return;
     }
 
-    callback(new Error('Not allowed by CORS'));
+    console.warn(`CORS blocked origin: ${origin}`);
+    // Do not throw server errors for CORS blocks; just omit CORS headers.
+    callback(null, false);
   },
 };
 app.use(
