@@ -1176,7 +1176,7 @@ export default function InvitePage() {
           </section>
 
           <footer className="pb-10 sm:pb-12 text-center text-[10px] sm:text-xs text-wedding-moss/45 font-sans tracking-[0.25em] uppercase">
-            Ratna Wedding
+            Ratna And Hasin Wedding Invitation
           </footer>
         </div>
       </div>
