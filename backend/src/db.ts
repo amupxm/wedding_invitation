@@ -3,10 +3,11 @@ import path from 'path';
 import lockfile from 'proper-lockfile';
 import { Invitation } from './types';
 
-const DB_PATH = path.resolve(
-  process.env.DB_PATH || path.join(process.cwd(), 'data', 'invitations.json')
-);
-const LOCK_OPTIONS = { retries: { retries: 5, minTimeout: 50, maxTimeout: 500 } };
+const DEFAULT_DB_PATH = path.resolve(__dirname, '..', 'data', 'invitations.json');
+const DB_PATH = path.resolve(process.env.DB_PATH || DEFAULT_DB_PATH);
+// lockSync cannot use retries (proper-lockfile throws "Cannot use retries with the sync api").
+// Default lock() options (stale/update/realpath) still apply inside the library.
+const LOCK_OPTIONS = {};
 
 function ensureDbExists(): void {
   if (!fs.existsSync(DB_PATH)) {
@@ -16,6 +17,10 @@ function ensureDbExists(): void {
     }
     fs.writeFileSync(DB_PATH, '[]', 'utf-8');
   }
+}
+
+export function getDbPath(): string {
+  return DB_PATH;
 }
 
 export function readAll(): Invitation[] {
@@ -75,6 +80,16 @@ export function remove(token: string): boolean {
     if (filtered.length === all.length) return false;
     writeAllUnsafe(filtered);
     return true;
+  } finally {
+    release();
+  }
+}
+
+export function resetAll(): void {
+  ensureDbExists();
+  const release = lockfile.lockSync(DB_PATH, LOCK_OPTIONS);
+  try {
+    writeAllUnsafe([]);
   } finally {
     release();
   }

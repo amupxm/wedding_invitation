@@ -11,4 +11,6 @@ export interface Invitation {
   guests: Guest[];
   createdAt: string;
   respondedAt: string | null;
+  /** One answer per invitation (not per guest). Omitted on older records until first RSVP after deploy. */
+  bringingFurBaby?: boolean | null;
 }

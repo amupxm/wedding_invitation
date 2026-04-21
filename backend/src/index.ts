@@ -11,13 +11,31 @@ dotenv.config();
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3001', 10);
+const TRUST_PROXY_HOPS = parseInt(process.env.TRUST_PROXY_HOPS || '1', 10);
+
+// Needed when running behind reverse proxies (e.g. Nginx) for correct client IP/rate-limits.
+app.set('trust proxy', TRUST_PROXY_HOPS);
 
 // Security headers
 app.use(helmet());
 
 // CORS — allow configured origin or fallback to localhost for dev
-const allowedOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173';
-app.use(cors({ origin: allowedOrigin }));
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow non-browser or same-origin requests without Origin header.
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error('Not allowed by CORS'));
+    },
+  })
+);
 
 // Request logging
 app.use(morgan('short'));

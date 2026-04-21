@@ -19,12 +19,19 @@ function dietLabel(d: Guest['diet']): string {
   return d === 'vegetarian' ? 'vegetarian' : 'non-vegetarian';
 }
 
+function furBabyCsv(inv: Invitation): string {
+  if (inv.bringingFurBaby === true) return 'yes';
+  if (inv.bringingFurBaby === false) return 'no';
+  return '';
+}
+
 function invitationsToCsv(invitations: Invitation[]): string {
   const headers = [
     'invitation_id',
     'invitation_token',
     'invitation_created_at',
     'invitation_responded_at',
+    'bringing_fur_baby',
     'guest_id',
     'guest_name',
     'attending',
@@ -39,6 +46,7 @@ function invitationsToCsv(invitations: Invitation[]): string {
           inv.token,
           inv.createdAt,
           inv.respondedAt ?? '',
+          furBabyCsv(inv),
           g.id,
           g.name,
           attendingLabel(g.attending),
@@ -285,6 +293,7 @@ export default function AdminPage() {
                   <tr className="text-left text-gray-500 border-b">
                     <th className="pb-2 pr-4 font-medium">Guests</th>
                     <th className="pb-2 pr-4 font-medium">Status</th>
+                    <th className="pb-2 pr-4 font-medium">Fur baby</th>
                     <th className="pb-2 pr-4 font-medium">Diets</th>
                     <th className="pb-2 font-medium">Actions</th>
                   </tr>
@@ -312,6 +321,15 @@ export default function AdminPage() {
                           <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${status.cls}`}>
                             {status.label}
                           </span>
+                        </td>
+                        <td className="py-3 pr-4 text-gray-600 whitespace-nowrap">
+                          {inv.respondedAt
+                            ? inv.bringingFurBaby === true
+                              ? 'Yes 🐶'
+                              : inv.bringingFurBaby === false
+                                ? 'No'
+                                : '—'
+                            : '—'}
                         </td>
                         <td className="py-3 pr-4 text-gray-500">
                           {inv.guests.map((g) => (

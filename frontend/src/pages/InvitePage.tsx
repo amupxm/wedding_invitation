@@ -1,5 +1,3 @@
-import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import {
   Building2,
   Check,
@@ -13,22 +11,28 @@ import {
   Salad,
   Sparkles,
   UtensilsCrossed,
+  Volume2,
   Wine,
   X,
 } from 'lucide-react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { getInvitation, submitRsvp } from '../api';
-import { Invitation, Guest } from '../types';
+import { Guest, Invitation } from '../types';
 
-import imgHeroTopLeft from '../eucalyptus_top_left_desktop-UGz1lNF-.png';
-import imgHeroBottomRight from '../eucalyptus_bottom_right_desktop-BLxpHn0i.png';
-import imgHotelMercureSabang from '../790352520.jpg';
 import imgHotelDiscoveryAncol from '../190687847.jpg';
-import imgRatnaXs from '../assets/ratna-xs.png';
-import imgHeroWedding from '../assets/DSC02492.JPG';
-import imgDateCol1 from '../assets/1.png';
+import imgHotelMercureSabang from '../790352520.jpg';
 import imgDateCol2 from '../assets/2.png';
-import imgDateCol3 from '../assets/3.png';
+import imgHeroWedding from '../assets/DSC02492.JPG';
 import imgQris from '../assets/qr.png';
+import imgRatnaXs from '../assets/ratna-xs.png';
+import imgHeroBottomRight from '../eucalyptus_bottom_right_desktop-BLxpHn0i.png';
+import imgEucalyptusLocationLeft from '../eucalyptus_location_left_desktop-BBRRCOmD.png';
+import imgHeroTopLeft from '../eucalyptus_top_left_desktop-UGz1lNF-.png';
+import imgEucalyptusWeddingSchedulesBottom from '../eucalyptus_wedding_schedules_bottom_desktop-c7aSIZnP.png';
+import inviteMusicUrl from '../music.mp3';
+import imgDateCol1 from '../x1.png';
+import imgDateCol3 from '../x2.png';
 
 function HeroFloralAccent({ className = '' }: { className?: string }) {
   return (
@@ -109,16 +113,100 @@ function SectionTitle({ children, subtitle }: { children: React.ReactNode; subti
   );
 }
 
+const DRESS_CODE_PALETTE = [
+  { name: 'Rust', hex: '#B7410E' },
+  { name: 'Pale Gold', hex: '#C99B68' },
+  { name: 'Harvester', hex: '#ECC18A' },
+  { name: 'Apricot Ice', hex: '#FDC19C' },
+  { name: 'Dried Eucalyptus', hex: '#66745B' },
+] as const;
+
+function DressCodeColorPalette() {
+  return (
+    <div className="mt-10 sm:mt-12 max-w-lg mx-auto md:max-w-xl" aria-label="Rustic boho palette">
+      <div className="grid grid-cols-5 gap-x-1.5 gap-y-1 px-0.5 sm:gap-x-3 md:gap-x-5">
+        {DRESS_CODE_PALETTE.map(({ name, hex }) => (
+          <div key={hex} className="flex min-w-0 flex-col items-center gap-1 sm:gap-1.5">
+            <div
+              className="h-9 w-9 shrink-0 rounded-full border border-wedding-ink/10 shadow-[0_4px_14px_-6px_rgba(42,42,40,0.28)] sm:h-12 sm:w-12 md:h-[3.75rem] md:w-[3.75rem]"
+              style={{ backgroundColor: hex }}
+              aria-hidden
+            />
+            <p className="text-center font-sans text-[9px] font-medium leading-tight text-wedding-forest sm:text-[11px] sm:leading-snug md:text-xs">
+              {name}
+            </p>
+            <p className="text-center font-mono text-[8px] tracking-wide text-wedding-moss/70 sm:text-[9px] md:text-[10px]">
+              {hex}
+            </p>
+          </div>
+        ))}
+      </div>
+      <p className="mt-8 font-menu text-sm italic text-wedding-ink/90 sm:mt-10 sm:text-base">
+        Ratna &amp; Hasin{' '}
+        <span className="mx-1.5 font-sans text-[10px] not-italic font-normal tracking-[0.2em] text-wedding-gold/80 sm:text-xs">
+          |
+        </span>
+        <span className="font-sans text-[11px] not-italic font-normal tracking-[0.14em] text-wedding-moss/75 sm:text-sm">
+          May 23, 2026
+        </span>
+      </p>
+    </div>
+  );
+}
+
 const MARINA_BATAVIA_MAPS_LINK = 'https://maps.app.goo.gl/6LvHGMkySwHhKkGP7';
 const MARINA_BATAVIA_EMBED_SRC =
   'https://maps.google.com/maps?q=-6.121726,106.813247&hl=en&z=16&output=embed';
 
 /** Replace with your real transfer details (shown in the Gifts modal). */
 const GIFT_BANKING_INFO = {
-  bank: 'BCA',
-  accountName: 'Ratna & Hasin',
-  accountNumber: '0000000000',
+  bank: 'Bank Central Asia (BCA)',
+  accountName: 'J Ratna Juita S',
+  accountNumber: '1451422621',
 } as const;
+
+function giftBankingDetailsCopyText(): string {
+  return GIFT_BANKING_INFO.accountNumber;
+}
+
+/** Works when Clipboard API is blocked (non-HTTPS, some embedded browsers). */
+function copyTextWithExecCommand(text: string): boolean {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.style.position = 'fixed';
+  ta.style.top = '0';
+  ta.style.left = '0';
+  ta.style.width = '1px';
+  ta.style.height = '1px';
+  ta.style.opacity = '0';
+  ta.style.pointerEvents = 'none';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  ta.setSelectionRange(0, text.length);
+  let ok = false;
+  try {
+    ok = document.execCommand('copy');
+  } catch {
+    ok = false;
+  }
+  document.body.removeChild(ta);
+  return ok;
+}
+
+async function copyBankingDetailsToClipboard(): Promise<boolean> {
+  const text = giftBankingDetailsCopyText();
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // fall through to legacy copy
+  }
+  return copyTextWithExecCommand(text);
+}
 
 function MarinaBataviaMapEmbed() {
   return (
@@ -147,12 +235,21 @@ function MarinaBataviaMapEmbed() {
 
 export default function InvitePage() {
   const { token } = useParams<{ token: string }>();
+  const inviteMusicRef = useRef<HTMLAudioElement | null>(null);
+  const inviteMusicUnlockRef = useRef<(() => void) | null>(null);
+  const inviteMusicRemoveGesturesRef = useRef<(() => void) | null>(null);
+  const [inviteMusicNeedsTap, setInviteMusicNeedsTap] = useState(false);
   const [invitation, setInvitation] = useState<Invitation | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [responses, setResponses] = useState<Guest[]>([]);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [bringingFurBaby, setBringingFurBaby] = useState<boolean | null>(null);
   const [qrisOpen, setQrisOpen] = useState(false);
+  const [bankingOpen, setBankingOpen] = useState(false);
+  const [bankingCopied, setBankingCopied] = useState(false);
+
+  const giftModalOpen = qrisOpen || bankingOpen;
 
   useEffect(() => {
     if (!token) return;
@@ -166,9 +263,17 @@ export default function InvitePage() {
   }, [token]);
 
   useEffect(() => {
-    if (!qrisOpen) return;
+    if (!invitation) return;
+    setBringingFurBaby(invitation.bringingFurBaby ?? null);
+  }, [invitation]);
+
+  useEffect(() => {
+    if (!giftModalOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setQrisOpen(false);
+      if (e.key === 'Escape') {
+        setQrisOpen(false);
+        setBankingOpen(false);
+      }
     };
     document.addEventListener('keydown', onKey);
     const prevOverflow = document.body.style.overflow;
@@ -177,7 +282,99 @@ export default function InvitePage() {
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = prevOverflow;
     };
-  }, [qrisOpen]);
+  }, [giftModalOpen]);
+
+  useLayoutEffect(() => {
+    if (!invitation) return undefined;
+    const audio = inviteMusicRef.current;
+    if (!audio) return undefined;
+
+    audio.loop = true;
+    audio.volume = 0.35;
+    audio.defaultMuted = false;
+
+    const detachGestures = () => {
+      inviteMusicRemoveGesturesRef.current?.();
+      inviteMusicRemoveGesturesRef.current = null;
+    };
+
+    const unmuteAndPlay = () => {
+      audio.muted = false;
+      void audio.play().catch(() => { });
+      setInviteMusicNeedsTap(false);
+      detachGestures();
+    };
+    inviteMusicUnlockRef.current = unmuteAndPlay;
+
+    const attachGestures = () => {
+      detachGestures();
+      const types = ['pointerdown', 'touchend', 'click'] as const;
+      const fns = types.map((type) => {
+        const fn = () => unmuteAndPlay();
+        document.addEventListener(type, fn, { capture: true });
+        return () => document.removeEventListener(type, fn, { capture: true });
+      });
+      inviteMusicRemoveGesturesRef.current = () => {
+        fns.forEach((off) => off());
+      };
+    };
+
+    let cancelled = false;
+    const tryStart = () => {
+      if (cancelled) return;
+      audio.muted = false;
+      void audio.play().then(
+        () => {
+          if (!cancelled) setInviteMusicNeedsTap(false);
+        },
+        () => {
+          if (cancelled) return;
+          audio.muted = true;
+          void audio.play().then(
+            () => {
+              if (!cancelled) {
+                setInviteMusicNeedsTap(true);
+                attachGestures();
+              }
+            },
+            () => {
+              if (!cancelled) {
+                setInviteMusicNeedsTap(true);
+                attachGestures();
+              }
+            }
+          );
+        }
+      );
+    };
+
+    let rafInner = 0;
+    const rafOuter = requestAnimationFrame(() => {
+      rafInner = requestAnimationFrame(tryStart);
+    });
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(rafOuter);
+      cancelAnimationFrame(rafInner);
+      inviteMusicUnlockRef.current = null;
+      detachGestures();
+      setInviteMusicNeedsTap(false);
+      audio.pause();
+      audio.currentTime = 0;
+      audio.muted = false;
+    };
+  }, [invitation]);
+
+  async function copyGiftBankingDetails() {
+    const ok = await copyBankingDetailsToClipboard();
+    if (ok) {
+      setBankingCopied(true);
+      window.setTimeout(() => setBankingCopied(false), 2000);
+    } else {
+      alert('Could not copy to clipboard. Please copy the details manually.');
+    }
+  }
 
   function updateGuest(id: string, field: keyof Guest, value: boolean | string | null) {
     setResponses((prev) =>
@@ -202,9 +399,13 @@ export default function InvitePage() {
       alert('Please answer every question for each guest.');
       return;
     }
+    if (bringingFurBaby === null) {
+      alert('Please let us know if you are bringing your fur baby (one per invitation).');
+      return;
+    }
     setSubmitting(true);
     try {
-      const updated = await submitRsvp(token, responses);
+      const updated = await submitRsvp(token, { guests: responses, bringingFurBaby });
       setInvitation(updated);
       setResponses(updated.guests.map((g) => ({ ...g })));
       setSubmitted(true);
@@ -280,6 +481,14 @@ export default function InvitePage() {
 
   return (
     <div className="min-h-screen bg-wedding-frame/90">
+      <audio
+        ref={inviteMusicRef}
+        src={inviteMusicUrl}
+        preload="auto"
+        playsInline
+        className="hidden"
+        aria-hidden
+      />
       <div className={shellClass}>
         <div className="bg-wedding-paper bg-paper-grain min-h-screen">
           {/* Hero */}
@@ -335,7 +544,7 @@ export default function InvitePage() {
                   className="pointer-events-none select-none absolute -right-2 top-10 z-10 h-36 sm:h-44 w-auto object-contain opacity-35"
                   decoding="async"
                 />
-                <div className="absolute inset-0 z-[11] bg-gradient-to-b from-wedding-paper/25 via-transparent to-transparent" />
+                <div className="pointer-events-none absolute inset-0 z-[11] bg-[linear-gradient(to_bottom,transparent_0%,transparent_90%,theme(colors.wedding.cream)_100%)]" />
                 <div className="absolute inset-x-0 bottom-0 z-10 h-[48%] pointer-events-none">
 
                   <img
@@ -386,22 +595,42 @@ export default function InvitePage() {
               </p>
             </div>
 
-            <div className="mt-10 sm:mt-14 max-w-3xl mx-auto rounded-2xl border border-wedding-gold/20 bg-wedding-cream/80 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 shadow-sm">
-              <div className="grid grid-cols-3 gap-2 sm:gap-4 items-stretch">
+            <div className="relative mt-10 sm:mt-14 max-w-3xl mx-auto overflow-hidden rounded-2xl border border-wedding-gold/20 bg-wedding-cream/80 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 shadow-sm">
+              <img
+                src={imgHeroBottomRight}
+                alt=""
+                className="pointer-events-none select-none absolute -right-4 -top-5 z-0 h-[8.5rem] w-auto max-w-[min(42%,12rem)] sm:h-[10rem] sm:max-w-[min(38%,13rem)] object-contain object-right-top opacity-80 rotate-[6deg]"
+                decoding="async"
+              />
+              <img
+                src={imgEucalyptusLocationLeft}
+                alt=""
+                className="pointer-events-none select-none absolute left-1 bottom-0 z-[2] h-[5.75rem] w-auto max-w-[min(34%,8.5rem)] translate-y-1.5 sm:left-2 sm:bottom-0 sm:h-[6.5rem] sm:max-w-[min(32%,9.25rem)] sm:translate-y-2 object-contain object-left-bottom opacity-80"
+                decoding="async"
+              />
+              <div className="relative z-[1] grid grid-cols-3 gap-2 sm:gap-4 items-stretch">
                 {(
                   [
-                    { label: '23', colPadClass: 'pt-0', image: imgDateCol1 },
-                    { label: '05', colPadClass: 'pt-10 sm:pt-16 md:pt-20', image: imgDateCol2 },
-                    { label: "'26", colPadClass: 'pt-20 sm:pt-32 md:pt-40', image: imgDateCol3 },
+                    { label: '23', colPadClass: 'pt-0', image: imgDateCol1, showDot: true },
+                    { label: '05', colPadClass: 'pt-10 sm:pt-16 md:pt-20', image: imgDateCol2, showDot: true },
+                    { label: "'26", colPadClass: 'pt-20 sm:pt-32 md:pt-40', image: imgDateCol3, showDot: false },
                   ] as const
-                ).map(({ label, colPadClass, image }) => (
+                ).map(({ label, colPadClass, image, showDot }) => (
                   <div
                     key={label}
                     className={`text-center flex flex-col items-center h-full min-h-0 ${colPadClass}`}
                   >
-                    <p className="font-display text-wedding-ink leading-none text-3xl sm:text-4xl md:text-[2.65rem] lg:text-[2.85rem]">
-                      {label}
-                    </p>
+                    <div className="relative inline-block">
+                      <p className="font-display font-bold text-wedding-ink leading-none tracking-tight text-5xl sm:text-6xl md:text-7xl lg:text-8xl">
+                        {label}
+                      </p>
+                      {showDot && (
+                        <span
+                          aria-hidden
+                          className="pointer-events-none absolute left-full bottom-0 z-10 h-1.5 w-1.5 translate-x-1.5 rounded-full bg-wedding-ink sm:h-2 sm:w-2 sm:translate-x-2 md:h-2.5 md:w-2.5 md:translate-x-2.5 lg:h-3 lg:w-3 lg:translate-x-3"
+                        />
+                      )}
+                    </div>
                     <div
                       className="relative mt-3 sm:mt-4 w-full h-[calc(10.5rem+50px)] sm:h-[calc(12.5rem+50px)] md:h-[calc(14rem+50px)] shrink-0 overflow-hidden border border-wedding-gold/25 bg-wedding-paper shadow-[0_8px_24px_-16px_rgba(42,42,40,0.45)]"
                     >
@@ -419,49 +648,65 @@ export default function InvitePage() {
             </div>
 
             <div className="mt-8 sm:mt-10 grid gap-10 sm:gap-12 md:grid-cols-2 max-w-3xl mx-auto">
-              <div className="text-left rounded-xl border border-wedding-gold/20 bg-white/50 px-5 py-6 sm:px-6 sm:py-7 shadow-sm">
-                <h3 className="font-menu text-lg sm:text-xl italic text-wedding-ink mb-4 sm:mb-5 text-center md:text-left">
-                  What to bring
-                </h3>
-                <ul className="space-y-3.5 sm:space-y-4">
-                  {[
-                    'Your small fur babies (Pets)',
-                    'A liver ready for drinks!',
-                    'An appetite for food!',
-                    'Your RSVP (on time, please!).',
-                  ].map((line) => (
-                    <li key={line} className="flex gap-3 text-sm sm:text-base font-sans font-light text-wedding-moss leading-snug">
-                      <Check
-                        className="mt-0.5 h-5 w-5 shrink-0 text-wedding-mossDeep"
-                        strokeWidth={2}
-                        aria-hidden
-                      />
-                      <span>{line}</span>
-                    </li>
-                  ))}
-                </ul>
+              <div className="relative overflow-hidden text-left rounded-xl border border-wedding-gold/20 bg-white/50 px-5 py-6 sm:px-6 sm:py-7 shadow-sm">
+                <img
+                  src={imgHeroBottomRight}
+                  alt=""
+                  className="pointer-events-none select-none absolute -right-3 -top-4 z-0 h-[7.5rem] w-auto max-w-[min(52%,11rem)] sm:h-[8.5rem] sm:max-w-[min(48%,12rem)] object-contain object-right-top opacity-80 rotate-[8deg]"
+                  decoding="async"
+                />
+                <div className="relative z-[1]">
+                  <h3 className="font-menu text-lg sm:text-xl italic text-wedding-ink mb-4 sm:mb-5 text-center md:text-left">
+                    What to bring
+                  </h3>
+                  <ul className="space-y-3.5 sm:space-y-4">
+                    {[
+                      'Your small fur babies 🐶',
+                      'A liver ready for drinks!',
+                      'An appetite for food!',
+                      'Your RSVP (on time, please!). 💌',
+                    ].map((line) => (
+                      <li key={line} className="flex gap-3 text-sm sm:text-base font-sans font-light text-wedding-moss leading-snug">
+                        <Check
+                          className="mt-0.5 h-5 w-5 shrink-0 text-wedding-mossDeep"
+                          strokeWidth={2}
+                          aria-hidden
+                        />
+                        <span>{line}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
 
-              <div className="text-left rounded-xl border border-wedding-gold/20 bg-white/50 px-5 py-6 sm:px-6 sm:py-7 shadow-sm">
-                <h3 className="font-menu text-lg sm:text-xl italic text-wedding-ink mb-4 sm:mb-5 text-center md:text-left">
-                  What to leave at home
-                </h3>
-                <ul className="space-y-3.5 sm:space-y-4">
-                  {[
-                    'The kids',
-                    'Your “plus-one” (unless their name is on this invitation).',
-                    'Your “plus-two?” Don’t you dare to try! :P',
-                  ].map((line) => (
-                    <li key={line} className="flex gap-3 text-sm sm:text-base font-sans font-light text-wedding-moss leading-snug">
-                      <Check
-                        className="mt-0.5 h-5 w-5 shrink-0 text-wedding-wine/90"
-                        strokeWidth={2}
-                        aria-hidden
-                      />
-                      <span>{line}</span>
-                    </li>
-                  ))}
-                </ul>
+              <div className="relative overflow-hidden text-left rounded-xl border border-wedding-gold/20 bg-white/50 px-5 py-6 sm:px-6 sm:py-7 shadow-sm">
+                <img
+                  src={imgHeroTopLeft}
+                  alt=""
+                  className="pointer-events-none select-none absolute -right-2 -top-3 z-0 h-[7rem] w-auto max-w-[min(48%,10.5rem)] sm:h-[8rem] sm:max-w-[min(44%,11.5rem)] object-contain object-right-top opacity-80 scale-x-[-1] rotate-[6deg]"
+                  decoding="async"
+                />
+                <div className="relative z-[1]">
+                  <h3 className="font-menu text-lg sm:text-xl italic text-wedding-ink mb-4 sm:mb-5 text-center md:text-left">
+                    What to leave at home
+                  </h3>
+                  <ul className="space-y-3.5 sm:space-y-4">
+                    {[
+                      'The kids  (👶🏻❌)',
+                      'Your “plus-one” (unless their name is on this invitation 👫❌). ',
+                      'Your “plus-two?” Don’t you dare to try! 😋',
+                    ].map((line) => (
+                      <li key={line} className="flex gap-3 text-sm sm:text-base font-sans font-light text-wedding-moss leading-snug">
+                        <Check
+                          className="mt-0.5 h-5 w-5 shrink-0 text-wedding-wine/90"
+                          strokeWidth={2}
+                          aria-hidden
+                        />
+                        <span>{line}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             </div>
           </section>
@@ -469,100 +714,108 @@ export default function InvitePage() {
           <FlourishDivider />
 
           {/* Timeline — mobile cards */}
-          <section className="pt-4 px-4 sm:px-8 lg:px-12 xl:px-14 pb-4 md:pb-0 bg-[#f3f0ea]/80">
-            <SectionTitle subtitle="The Day">Order of the day</SectionTitle>
-            {/* Timeline — mobile: vertical spine + cards */}
-            <div className="relative md:hidden pb-12 max-w-xl mx-auto">
-              <div
-                className="pointer-events-none absolute left-6 top-8 bottom-8 w-[2px] -translate-x-1/2 rounded-full z-0"
-                style={{ background: 'linear-gradient(180deg, rgba(197,199,192,0.3) 0%, rgba(139,145,130,0.85) 8%, rgba(139,145,130,0.85) 92%, rgba(197,199,192,0.3) 100%)' }}
-                aria-hidden
-              />
-              <ul className="relative z-[1] space-y-4 sm:space-y-5">
-                {timelineItems.map((item, i) => {
-                  const Icon = item.Icon;
-                  return (
-                    <li key={i} className="relative flex gap-3 sm:gap-4">
-                      <div className="relative z-[2] flex shrink-0 w-12 sm:w-14 justify-center">
-                        <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full border-2 border-wedding-gold/40 bg-[#f3f0ea] shadow-sm flex items-center justify-center text-wedding-moss ring-[6px] ring-[#f3f0ea]">
-                          <Icon className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.15} />
+          <section className="relative pt-4 px-4 sm:px-8 lg:px-12 xl:px-14 pb-4 md:pb-0 bg-[#f3f0ea]/80">
+            <img
+              src={imgEucalyptusLocationLeft}
+              alt=""
+              className="pointer-events-none select-none absolute left-0 bottom-0 z-0 h-[6rem] w-auto max-w-[min(44%,11rem)] translate-y-2 sm:left-1 sm:h-[7.25rem] sm:max-w-[min(40%,12rem)] sm:translate-y-3 object-contain object-left-bottom opacity-80"
+              decoding="async"
+            />
+            <div className="relative z-[1]">
+              <SectionTitle subtitle="The Day">Order of the day</SectionTitle>
+              {/* Timeline — mobile: vertical spine + cards */}
+              <div className="relative md:hidden pb-12 max-w-xl mx-auto">
+                <div
+                  className="pointer-events-none absolute left-6 top-8 bottom-8 w-[2px] -translate-x-1/2 rounded-full z-0"
+                  style={{ background: 'linear-gradient(180deg, rgba(197,199,192,0.3) 0%, rgba(139,145,130,0.85) 8%, rgba(139,145,130,0.85) 92%, rgba(197,199,192,0.3) 100%)' }}
+                  aria-hidden
+                />
+                <ul className="relative z-[1] space-y-4 sm:space-y-5">
+                  {timelineItems.map((item, i) => {
+                    const Icon = item.Icon;
+                    return (
+                      <li key={i} className="relative flex gap-3 sm:gap-4">
+                        <div className="relative z-[2] flex shrink-0 w-12 sm:w-14 justify-center">
+                          <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full border-2 border-wedding-gold/40 bg-[#f3f0ea] shadow-sm flex items-center justify-center text-wedding-moss ring-[6px] ring-[#f3f0ea]">
+                            <Icon className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.15} />
+                          </div>
                         </div>
-                      </div>
-                      <article className="min-w-0 flex-1 rounded-2xl border border-wedding-gold/20 bg-white/70 backdrop-blur-sm p-4 sm:p-5 shadow-[0_8px_30px_-12px_rgba(42,42,40,0.15)]">
-                        <p className="text-[11px] sm:text-xs font-sans uppercase tracking-[0.2em] text-wedding-gold mb-1">
-                          {item.time}
-                        </p>
-                        <h3 className="font-display text-lg sm:text-xl text-wedding-forest font-semibold tracking-wide">
-                          {item.title}
-                        </h3>
-                        <p className="text-xs sm:text-sm text-wedding-moss/75 mt-1">{item.place}</p>
-                        <p className="text-xs sm:text-sm text-wedding-moss/85 leading-relaxed mt-2">{item.detail}</p>
-                      </article>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-
-            {/* Timeline — desktop alternating + continuous center line */}
-            <div className="hidden md:block relative max-w-3xl mx-auto px-2 lg:px-4 pb-16 lg:pb-20">
-              <div
-                className="pointer-events-none absolute left-1/2 top-0 bottom-0 w-[2px] -translate-x-1/2 z-0 rounded-full"
-                style={{
-                  background:
-                    'linear-gradient(180deg, rgba(197,199,192,0.35) 0%, rgba(139,145,130,0.92) 4%, rgba(139,145,130,0.92) 96%, rgba(197,199,192,0.35) 100%)',
-                }}
-                aria-hidden
-              />
-              <div className="absolute left-1/2 -translate-x-1/2 top-0 z-[2] flex h-8 w-8 items-center justify-center rounded-full bg-[#f3f0ea] ring-[6px] ring-[#f3f0ea]">
-                <Heart className="h-4 w-4 fill-wedding-moss/15 text-wedding-moss" strokeWidth={1.5} />
-              </div>
-              <div className="absolute left-1/2 -translate-x-1/2 bottom-0 z-[2] flex h-8 w-8 items-center justify-center rounded-full bg-[#f3f0ea] ring-[6px] ring-[#f3f0ea]">
-                <Heart className="h-4 w-4 fill-wedding-moss/15 text-wedding-moss" strokeWidth={1.5} />
+                        <article className="min-w-0 flex-1 rounded-2xl border border-wedding-gold/20 bg-white/70 backdrop-blur-sm p-4 sm:p-5 shadow-[0_8px_30px_-12px_rgba(42,42,40,0.15)]">
+                          <p className="text-[11px] sm:text-xs font-sans uppercase tracking-[0.2em] text-wedding-gold mb-1">
+                            {item.time}
+                          </p>
+                          <h3 className="font-display text-lg sm:text-xl text-wedding-forest font-semibold tracking-wide">
+                            {item.title}
+                          </h3>
+                          <p className="text-xs sm:text-sm text-wedding-moss/75 mt-1">{item.place}</p>
+                          <p className="text-xs sm:text-sm text-wedding-moss/85 leading-relaxed mt-2">{item.detail}</p>
+                        </article>
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
 
-              <ul className="relative z-[1] space-y-14 lg:space-y-16 pt-10 pb-12">
-                {timelineItems.map((item, i) => {
-                  const Icon = item.Icon;
-                  const isLeft = item.side === 'left';
-                  return (
-                    <li
-                      key={i}
-                      className="grid grid-cols-[1fr_auto_1fr] gap-x-4 lg:gap-x-8 gap-y-2 items-start"
-                    >
-                      <div className="text-right min-h-[1px]">
-                        {isLeft && (
-                          <div className="space-y-1 pr-1">
-                            <p className="text-sm font-sans uppercase tracking-wider text-wedding-gold">{item.time}</p>
-                            <p className="font-display text-lg lg:text-xl font-semibold text-wedding-forest">{item.title}</p>
-                            <p className="text-xs lg:text-sm text-wedding-moss/70">{item.place}</p>
-                            <p className="text-xs lg:text-sm text-wedding-moss/80 leading-relaxed mt-2 max-w-[14rem] ml-auto">
-                              {item.detail}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                      <div className="relative z-[2] flex flex-col items-center justify-start pt-0.5">
-                        <div className="flex h-12 w-12 lg:h-14 lg:w-14 shrink-0 items-center justify-center rounded-full border-2 border-wedding-gold/40 bg-[#f3f0ea] shadow-sm ring-[6px] ring-[#f3f0ea] text-wedding-moss">
-                          <Icon className="h-5 w-5 lg:h-6 lg:w-6" strokeWidth={1.15} />
+              {/* Timeline — desktop alternating + continuous center line */}
+              <div className="hidden md:block relative max-w-3xl mx-auto px-2 lg:px-4 pb-16 lg:pb-20">
+                <div
+                  className="pointer-events-none absolute left-1/2 top-0 bottom-0 w-[2px] -translate-x-1/2 z-0 rounded-full"
+                  style={{
+                    background:
+                      'linear-gradient(180deg, rgba(197,199,192,0.35) 0%, rgba(139,145,130,0.92) 4%, rgba(139,145,130,0.92) 96%, rgba(197,199,192,0.35) 100%)',
+                  }}
+                  aria-hidden
+                />
+                <div className="absolute left-1/2 -translate-x-1/2 top-0 z-[2] flex h-8 w-8 items-center justify-center rounded-full bg-[#f3f0ea] ring-[6px] ring-[#f3f0ea]">
+                  <Heart className="h-4 w-4 fill-wedding-moss/15 text-wedding-moss" strokeWidth={1.5} />
+                </div>
+                <div className="absolute left-1/2 -translate-x-1/2 bottom-0 z-[2] flex h-8 w-8 items-center justify-center rounded-full bg-[#f3f0ea] ring-[6px] ring-[#f3f0ea]">
+                  <Heart className="h-4 w-4 fill-wedding-moss/15 text-wedding-moss" strokeWidth={1.5} />
+                </div>
+
+                <ul className="relative z-[1] space-y-14 lg:space-y-16 pt-10 pb-12">
+                  {timelineItems.map((item, i) => {
+                    const Icon = item.Icon;
+                    const isLeft = item.side === 'left';
+                    return (
+                      <li
+                        key={i}
+                        className="grid grid-cols-[1fr_auto_1fr] gap-x-4 lg:gap-x-8 gap-y-2 items-start"
+                      >
+                        <div className="text-right min-h-[1px]">
+                          {isLeft && (
+                            <div className="space-y-1 pr-1">
+                              <p className="text-sm font-sans uppercase tracking-wider text-wedding-gold">{item.time}</p>
+                              <p className="font-display text-lg lg:text-xl font-semibold text-wedding-forest">{item.title}</p>
+                              <p className="text-xs lg:text-sm text-wedding-moss/70">{item.place}</p>
+                              <p className="text-xs lg:text-sm text-wedding-moss/80 leading-relaxed mt-2 max-w-[14rem] ml-auto">
+                                {item.detail}
+                              </p>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                      <div className="text-left min-h-[1px]">
-                        {!isLeft && (
-                          <div className="space-y-1 pl-1">
-                            <p className="text-sm font-sans uppercase tracking-wider text-wedding-gold">{item.time}</p>
-                            <p className="font-display text-lg lg:text-xl font-semibold text-wedding-forest">{item.title}</p>
-                            <p className="text-xs lg:text-sm text-wedding-moss/70">{item.place}</p>
-                            <p className="text-xs lg:text-sm text-wedding-moss/80 leading-relaxed mt-2 max-w-[14rem]">
-                              {item.detail}
-                            </p>
+                        <div className="relative z-[2] flex flex-col items-center justify-start pt-0.5">
+                          <div className="flex h-12 w-12 lg:h-14 lg:w-14 shrink-0 items-center justify-center rounded-full border-2 border-wedding-gold/40 bg-[#f3f0ea] shadow-sm ring-[6px] ring-[#f3f0ea] text-wedding-moss">
+                            <Icon className="h-5 w-5 lg:h-6 lg:w-6" strokeWidth={1.15} />
                           </div>
-                        )}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
+                        </div>
+                        <div className="text-left min-h-[1px]">
+                          {!isLeft && (
+                            <div className="space-y-1 pl-1">
+                              <p className="text-sm font-sans uppercase tracking-wider text-wedding-gold">{item.time}</p>
+                              <p className="font-display text-lg lg:text-xl font-semibold text-wedding-forest">{item.title}</p>
+                              <p className="text-xs lg:text-sm text-wedding-moss/70">{item.place}</p>
+                              <p className="text-xs lg:text-sm text-wedding-moss/80 leading-relaxed mt-2 max-w-[14rem]">
+                                {item.detail}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
             </div>
 
           </section>
@@ -570,45 +823,64 @@ export default function InvitePage() {
           <FlourishDivider className="bg-wedding-paper" />
 
           {/* Dress code */}
-          <section className="px-5 sm:px-8 lg:px-14 py-12 sm:py-16 lg:py-20 text-center bg-wedding-paper">
-            <div className="max-w-2xl mx-auto mb-8 sm:mb-10">
-              <div className="relative overflow-hidden border border-wedding-gold/25 bg-white/80 p-2 shadow-[0_12px_28px_-18px_rgba(42,42,40,0.45)]">
-                <div className="relative h-44 sm:h-52 w-full">
-                  
-                  <img
-                    src={imgRatnaXs}
-                    alt=""
-                    aria-hidden
-                    className="pointer-events-none absolute inset-0 h-full w-full object-cover grayscale sepia-[0.42] contrast-[1.08] brightness-[1] mix-blend-multiply opacity-[1] sm:opacity-[1]"
-                    decoding="async"
-                  />
-                </div>
-              
-                <div className="pointer-events-none absolute inset-0 border border-wedding-gold/20" />
-              </div>
+          <section className="relative px-5 sm:px-8 lg:px-14 py-12 sm:py-16 lg:py-20 text-center bg-wedding-paper">
+            <div className="relative mb-8 sm:mb-10 h-44 sm:h-52 w-screen max-w-none left-1/2 -translate-x-1/2 overflow-hidden">
+              <img
+                src={imgRatnaXs}
+                alt="Rustic boho dress code mood"
+                className="pointer-events-none absolute inset-0 z-0 h-full w-full object-cover grayscale sepia-[0.42] contrast-[1.08] brightness-[1] mix-blend-multiply"
+                decoding="async"
+              />
+              <img
+                src={imgEucalyptusWeddingSchedulesBottom}
+                alt=""
+                className="pointer-events-none select-none absolute -right-1 top-0 z-[1] h-auto max-h-[7.7rem] w-auto max-w-[min(52%,9.85rem)] object-contain object-right-top opacity-90 sm:-right-0.5 sm:max-h-[8.75rem] sm:max-w-[min(48%,11.2rem)]"
+                decoding="async"
+              />
             </div>
-            <SectionTitle subtitle="Attire">Dress code</SectionTitle>
-            <p className="text-sm sm:text-base font-sans font-light leading-[1.85] text-wedding-moss max-w-xl mx-auto">
-            Our dress code is <span className="font-medium text-wedding-forest">Rustic Boho</span> — earthy tones, natural fabrics, and relaxed, effortless elegance.
-            </p>
+            <div className="relative z-[1]">
+              <SectionTitle subtitle="Attire">Dress code</SectionTitle>
+              <p className="text-sm sm:text-base font-sans font-light leading-[1.85] text-wedding-moss max-w-xl mx-auto">
+                Our dress code is <span className="font-medium text-wedding-forest">Rustic Boho</span> — earthy tones, natural fabrics, and relaxed, effortless elegance.
+              </p>
+              <DressCodeColorPalette />
+            </div>
           </section>
 
           <FlourishDivider />
 
           {/* Gifts */}
-          <section className="px-5 sm:px-8 lg:px-14 py-12 sm:py-16 lg:py-20 text-center">
+          <section className="relative overflow-hidden px-5 sm:px-8 lg:px-14 py-12 sm:py-16 lg:py-20 text-center">
+            <img
+              src={imgEucalyptusWeddingSchedulesBottom}
+              alt=""
+              className="pointer-events-none select-none absolute -right-1 top-0 z-0 h-auto max-h-[8.25rem] w-auto max-w-[min(52%,10.25rem)] object-contain object-right-top opacity-85 sm:max-h-[9rem] sm:max-w-[min(45%,11.5rem)]"
+              decoding="async"
+            />
             <SectionTitle subtitle="With gratitude">Gifts</SectionTitle>
             <p className="text-sm sm:text-base font-sans font-light leading-[1.85] text-wedding-moss max-w-xl mx-auto">
               Your presence is our greatest gift. Should you wish to give something more, a contribution toward our
               honeymoon would be deeply appreciated.
             </p>
-            <button
-              type="button"
-              onClick={() => setQrisOpen(true)}
-              className="mt-6 sm:mt-8 inline-flex items-center justify-center rounded-full border border-wedding-gold/40 bg-wedding-cream/90 px-6 py-2.5 text-sm font-sans font-medium tracking-wide text-wedding-forest shadow-sm transition hover:border-wedding-gold/60 hover:bg-wedding-creamWarm/95"
-            >
-              Show QRIS
-            </button>
+            <div className="mt-6 sm:mt-8 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+              <button
+                type="button"
+                onClick={() => setQrisOpen(true)}
+                className="inline-flex items-center justify-center rounded-full border border-wedding-gold/40 bg-wedding-cream/90 px-6 py-2.5 text-sm font-sans font-medium tracking-wide text-wedding-forest shadow-sm transition hover:border-wedding-gold/60 hover:bg-wedding-creamWarm/95"
+              >
+                Show QRIS
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setBankingCopied(false);
+                  setBankingOpen(true);
+                }}
+                className="inline-flex items-center justify-center rounded-full border border-wedding-gold/40 bg-wedding-cream/90 px-6 py-2.5 text-sm font-sans font-medium tracking-wide text-wedding-forest shadow-sm transition hover:border-wedding-gold/60 hover:bg-wedding-creamWarm/95"
+              >
+                Show banking info
+              </button>
+            </div>
           </section>
 
           <FlourishDivider />
@@ -768,6 +1040,22 @@ export default function InvitePage() {
                           </div>
                         </div>
                       ))}
+                      <div className="mt-6 pt-6 border-t border-wedding-gold/20 text-left max-w-md mx-auto space-y-1">
+                        <p className="text-[11px] sm:text-xs font-sans uppercase tracking-[0.2em] text-wedding-greyGreen">
+                          Fur baby
+                        </p>
+                        <p className="text-sm sm:text-base font-sans text-wedding-moss">
+                          {invitation.bringingFurBaby === true && (
+                            <span>
+                              Bringing a fur baby <span aria-hidden>🐶</span>
+                            </span>
+                          )}
+                          {invitation.bringingFurBaby === false && <span>Not bringing a fur baby</span>}
+                          {(invitation.bringingFurBaby !== true && invitation.bringingFurBaby !== false) && (
+                            <span className="text-wedding-moss/70">—</span>
+                          )}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -843,6 +1131,37 @@ export default function InvitePage() {
                       </div>
                     ))}
 
+                    <div className="border border-wedding-gold/25 rounded-xl p-5 sm:p-6 lg:p-7 space-y-4 bg-white/60 shadow-sm max-w-md mx-auto">
+                      <p className="text-center font-display text-lg sm:text-xl text-wedding-forest tracking-wide">
+                        Are you bringing your Fur Baby? <span aria-hidden>🐶</span>
+                      </p>
+                      <p className="text-center text-xs sm:text-sm font-sans font-light text-wedding-moss/90 leading-relaxed">
+                        One pet per invitation, please.
+                      </p>
+                      <div className="flex flex-col sm:flex-row gap-3 sm:gap-6 justify-center items-stretch sm:items-center pt-1">
+                        <label className="flex items-center justify-center gap-2.5 cursor-pointer rounded-full border border-transparent hover:border-wedding-gold/30 px-3 py-2 transition-colors">
+                          <input
+                            type="radio"
+                            name="bringing-fur-baby"
+                            checked={bringingFurBaby === true}
+                            onChange={() => setBringingFurBaby(true)}
+                            className="accent-wedding-mossDeep w-4 h-4 shrink-0"
+                          />
+                          <span className="text-sm text-wedding-moss">Yes</span>
+                        </label>
+                        <label className="flex items-center justify-center gap-2.5 cursor-pointer rounded-full border border-transparent hover:border-wedding-gold/30 px-3 py-2 transition-colors">
+                          <input
+                            type="radio"
+                            name="bringing-fur-baby"
+                            checked={bringingFurBaby === false}
+                            onChange={() => setBringingFurBaby(false)}
+                            className="accent-wedding-mossDeep w-4 h-4 shrink-0"
+                          />
+                          <span className="text-sm text-wedding-moss">No</span>
+                        </label>
+                      </div>
+                    </div>
+
                     <button
                       type="submit"
                       disabled={submitting}
@@ -898,6 +1217,91 @@ export default function InvitePage() {
             />
           </div>
         </div>
+      )}
+
+      {bankingOpen && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="banking-dialog-title"
+        >
+          <button
+            type="button"
+            className="absolute inset-0 bg-wedding-ink/55 backdrop-blur-[2px]"
+            aria-label="Close banking details"
+            onClick={() => {
+              setBankingOpen(false);
+              setBankingCopied(false);
+            }}
+          />
+          <div className="relative z-10 w-full max-w-md rounded-xl border border-wedding-gold/35 bg-gradient-to-b from-wedding-paper via-wedding-creamWarm to-wedding-sage/35 px-5 pb-5 pt-11 shadow-2xl ring-1 ring-wedding-gold/20 sm:px-6 sm:pb-6 sm:pt-12">
+            <button
+              type="button"
+              onClick={() => {
+                setBankingOpen(false);
+                setBankingCopied(false);
+              }}
+              className="absolute right-2 top-2 rounded-full p-2 text-wedding-moss transition hover:bg-wedding-line/50 sm:right-3 sm:top-3"
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" strokeWidth={1.75} />
+            </button>
+            <h3
+              id="banking-dialog-title"
+              className="mb-5 text-center font-menu text-lg italic text-wedding-ink sm:text-xl"
+            >
+              Banking details
+            </h3>
+            <dl className="space-y-4 text-left text-sm sm:text-base">
+              <div>
+                <dt className="font-sans text-[10px] uppercase tracking-[0.2em] text-wedding-greyGreen">Bank</dt>
+                <dd className="mt-1 font-sans font-medium text-wedding-forest">{GIFT_BANKING_INFO.bank}</dd>
+              </div>
+              <div>
+                <dt className="font-sans text-[10px] uppercase tracking-[0.2em] text-wedding-greyGreen">
+                  Account name
+                </dt>
+                <dd className="mt-1 font-sans font-medium text-wedding-forest">{GIFT_BANKING_INFO.accountName}</dd>
+              </div>
+              <div>
+                <dt className="font-sans text-[10px] uppercase tracking-[0.2em] text-wedding-greyGreen">
+                  Account number
+                </dt>
+                <dd className="mt-1 font-sans font-medium tracking-wide text-wedding-ink">{GIFT_BANKING_INFO.accountNumber}</dd>
+              </div>
+            </dl>
+            <button
+              type="button"
+              onClick={() => void copyGiftBankingDetails()}
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-full border border-wedding-gold/45 bg-wedding-paper/90 py-3 text-sm font-sans font-medium text-wedding-forest transition hover:border-wedding-gold/65 hover:bg-white"
+            >
+              {bankingCopied ? (
+                <>
+                  <Check className="h-4 w-4 shrink-0 text-wedding-mossDeep" strokeWidth={2} aria-hidden />
+                  Copied
+                </>
+              ) : (
+                <>
+                  <Copy className="h-4 w-4 shrink-0 text-wedding-goldWarm" strokeWidth={2} aria-hidden />
+                  Copy account number
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {inviteMusicNeedsTap && (
+        <button
+          type="button"
+          onClick={() => inviteMusicUnlockRef.current?.()}
+          className="fixed bottom-5 right-5 z-[220] inline-flex items-center gap-2 rounded-full border border-wedding-gold/50 bg-wedding-creamWarm/95 px-4 py-2.5 text-xs font-sans font-medium text-wedding-forest shadow-lg backdrop-blur-sm transition hover:bg-wedding-cream/98 sm:bottom-6 sm:right-6 sm:px-5 sm:text-sm"
+          aria-label="Play background music"
+        >
+          <Volume2 className="h-4 w-4 shrink-0 text-wedding-mossDeep" strokeWidth={2} aria-hidden />
+          Tap for music
+        </button>
       )}
     </div>
   );

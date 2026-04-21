@@ -51,11 +51,14 @@ export async function getInvitation(token: string): Promise<Invitation> {
   return res.json();
 }
 
-export async function submitRsvp(token: string, guests: Guest[]): Promise<Invitation> {
+export async function submitRsvp(
+  token: string,
+  payload: { guests: Guest[]; bringingFurBaby: boolean }
+): Promise<Invitation> {
   const res = await fetch(`${BASE}/invitations/${token}/rsvp`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ guests }),
+    body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error('Failed to submit RSVP');
   return res.json();

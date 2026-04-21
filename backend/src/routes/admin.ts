@@ -61,6 +61,7 @@ router.post('/invitations', requireAdmin, (req: Request, res: Response) => {
     guests,
     createdAt: new Date().toISOString(),
     respondedAt: null,
+    bringingFurBaby: null,
   };
 
   db.save(invitation);

@@ -11,4 +11,5 @@ export interface Invitation {
   guests: Guest[];
   createdAt: string;
   respondedAt: string | null;
+  bringingFurBaby?: boolean | null;
 }

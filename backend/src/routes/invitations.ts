@@ -31,9 +31,13 @@ router.put('/:token/rsvp', rsvpLimiter, (req: Request, res: Response) => {
     return;
   }
 
-  const { guests } = req.body as { guests?: Guest[] };
+  const { guests, bringingFurBaby } = req.body as { guests?: Guest[]; bringingFurBaby?: unknown };
   if (!guests || !Array.isArray(guests)) {
     res.status(400).json({ error: 'guests array is required' });
+    return;
+  }
+  if (typeof bringingFurBaby !== 'boolean') {
+    res.status(400).json({ error: 'bringingFurBaby (boolean) is required' });
     return;
   }
 
@@ -57,6 +61,7 @@ router.put('/:token/rsvp', rsvpLimiter, (req: Request, res: Response) => {
   const updated = {
     ...invitation,
     guests: updatedGuests,
+    bringingFurBaby,
     respondedAt: new Date().toISOString(),
   };
 
