@@ -21,7 +21,6 @@ import { getInvitation, submitRsvp } from '../api';
 import { Guest, Invitation } from '../types';
 
 import imgHotelDiscoveryAncol from '../190687847.jpg';
-import imgHotelMercureSabang from '../790352520.jpg';
 import imgDateCol2 from '../assets/2.png';
 import imgHeroWedding from '../assets/DSC02492.JPG';
 import imgQris from '../assets/qr.png';
@@ -30,6 +29,9 @@ import imgHeroBottomRight from '../eucalyptus_bottom_right_desktop-BLxpHn0i.png'
 import imgEucalyptusLocationLeft from '../eucalyptus_location_left_desktop-BBRRCOmD.png';
 import imgHeroTopLeft from '../eucalyptus_top_left_desktop-UGz1lNF-.png';
 import imgEucalyptusWeddingSchedulesBottom from '../eucalyptus_wedding_schedules_bottom_desktop-c7aSIZnP.png';
+import hotelimg1 from '../h1.png';
+import hotelimg2 from '../h2.png';
+import hotelimg3 from '../h3.png';
 import inviteMusicUrl from '../music.mp3';
 import imgDateCol1 from '../x1.png';
 import imgDateCol3 from '../x2.png';
@@ -465,15 +467,24 @@ export default function InvitePage() {
 
   const stayHotels = [
     {
-      name: 'Mercure Jakarta Sabang',
-      bookingUrl: 'https://www.booking.com/hotel/id/mercure-jakarta-sabang.html',
-      image: imgHotelMercureSabang,
+      name: 'Mercure Jakarta BataviaOpens in new window',
+      bookingUrl: 'https://www.booking.com/hotel/id/the-batavia.html',
+      image: hotelimg1,
     },
     {
       name: 'Discovery Ancol',
       bookingUrl: 'https://www.booking.com/Share-A1IC04',
       image: imgHotelDiscoveryAncol,
     },
+    {
+      name: 'Mercure Convention Center Ancol',
+      bookingUrl: 'https://www.booking.com/hotel/id/convention-centre-ancol.html',
+      image: hotelimg2,
+    }, {
+      name: 'Novotel Jakarta Mangga Dua Square',
+      bookingUrl: 'https://www.booking.com/hotel/id/novotel-mangga-dua.html',
+      image: hotelimg3,
+    }
   ];
 
   const shellClass =
@@ -843,6 +854,9 @@ export default function InvitePage() {
               <p className="text-sm sm:text-base font-sans font-light leading-[1.85] text-wedding-moss max-w-xl mx-auto">
                 Our dress code is <span className="font-medium text-wedding-forest">Rustic Boho</span> — earthy tones, natural fabrics, and relaxed, effortless elegance.
               </p>
+              <p className="text-sm sm:text-base font-sans font-light leading-[1.85] text-wedding-moss max-w-xl mx-auto">
+                Venue: Indoor & Outdoor
+              </p>
               <DressCodeColorPalette />
             </div>
           </section>
@@ -889,8 +903,7 @@ export default function InvitePage() {
           <section className="px-5 sm:px-8 lg:px-14 py-12 sm:py-16 lg:py-20 text-center bg-wedding-paper/50">
             <SectionTitle subtitle="Travel">Where to stay</SectionTitle>
             <p className="text-sm sm:text-base font-sans font-light leading-[1.85] text-wedding-moss max-w-xl mx-auto">
-              We&apos;re pleased to share at least two hotel options below. If we secure room blocks, we&apos;ll send
-              codes in a separate message.
+              We&apos;re pleased to share at least two hotel options below.
             </p>
             <div className="mt-8 grid gap-5 sm:gap-6 sm:grid-cols-2 max-w-2xl mx-auto text-left">
               {stayHotels.map((hotel) => (
@@ -984,7 +997,7 @@ export default function InvitePage() {
                 <SectionTitle subtitle="Kindly reply">RSVP</SectionTitle>
                 <p className="text-center text-xs sm:text-sm font-sans font-light leading-relaxed text-wedding-moss mb-8 sm:mb-10 max-w-md mx-auto">
                   To help us plan, please let us know if you can join by{' '}
-                  <span className="whitespace-nowrap font-medium text-wedding-ink">May 23, 2026</span>.
+                  <span className="whitespace-nowrap font-medium text-wedding-ink">May 16, 2026</span>.
                 </p>
 
                 {submitted ? (
